@@ -1,7 +1,21 @@
 // swift-tools-version: 5.9
 import PackageDescription
+
 let package = Package(
-    name: "SportsApp", platforms: [.iOS(.v16)],
-    products: [.library(name: "SportsApp", targets: ["SportsApp"])],
-    targets: [.target(name: "SportsApp"), .testTarget(name: "SportsAppTests", dependencies: ["SportsApp"])]
+    name: "SportsApp",
+    platforms: [.iOS(.v16), .macOS(.v13)],
+    products: [
+        .library(name: "SportsApp", targets: ["SportsApp"])
+    ],
+    targets: [
+        .target(
+            name: "SportsApp",
+            path: "SportsApp"
+        ),
+        .testTarget(
+            name: "SportsAppTests",
+            dependencies: ["SportsApp"],
+            path: "Tests/SportsAppTests"
+        )
+    ]
 )
