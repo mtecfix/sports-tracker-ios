@@ -1,11 +1,14 @@
 import Foundation
+
 @MainActor class SportsViewModel: ObservableObject {
     @Published var sessions: [SportSession] = []
     @Published var gear: [GearItem] = []
     @Published var isLoading = false
     @Published var error: String? = nil
+
     var totalSessions: Int { sessions.count }
     var avgRating: Double { sessions.isEmpty ? 0 : Double(sessions.reduce(0) { $0 + $1.rating }) / Double(sessions.count) }
+
     func load() async {
         isLoading = true; error = nil
         async let s = APIService.shared.getSessions()
@@ -14,14 +17,36 @@ import Foundation
         catch { self.error = error.localizedDescription }
         isLoading = false
     }
-    func logSession(sport: String, location: String, duration: Int, rating: Int, notes: String, conditions: String?) async {
-        let r = CreateSessionRequest(sport: sport, location: location, duration: duration, rating: rating, notes: notes, waveHeight: nil, windSpeed: nil, conditions: conditions, gearUsed: [], date: nil)
+
+    func logSession(sport: String, location: String, duration: Int, rating: Int, notes: String,
+                    conditions: String?, waveHeight: Double? = nil, windSpeed: Double? = nil) async {
+        let r = CreateSessionRequest(sport: sport, location: location, duration: duration, rating: rating,
+            notes: notes, waveHeight: waveHeight, windSpeed: windSpeed, conditions: conditions, gearUsed: [], date: nil)
         do { let s = try await APIService.shared.logSession(r); sessions.insert(s, at: 0) }
         catch { self.error = error.localizedDescription }
     }
+
+    func deleteSession(sessionId: String) async {
+        do { try await APIService.shared.deleteSession(sessionId: sessionId); sessions.removeAll { $0.id == sessionId } }
+        catch { self.error = error.localizedDescription }
+    }
+
     func addGear(name: String, type: String, brand: String) async {
         let r = CreateGearRequest(name: name, type: type, brand: brand, condition: "good", notes: nil)
         do { let g = try await APIService.shared.addGear(r); gear.insert(g, at: 0) }
+        catch { self.error = error.localizedDescription }
+    }
+
+    func updateGear(gearId: String, name: String, type: String, brand: String, condition: String, notes: String) async throws {
+        try await APIService.shared.updateGear(gearId: gearId, name: name, type: type, brand: brand, condition: condition, notes: notes)
+        if let idx = gear.firstIndex(where: { $0.id == gearId }) {
+            gear[idx].name = name; gear[idx].type = type; gear[idx].brand = brand
+            gear[idx].condition = condition; gear[idx].notes = notes
+        }
+    }
+
+    func deleteGear(gearId: String) async {
+        do { try await APIService.shared.deleteGear(gearId: gearId); gear.removeAll { $0.id == gearId } }
         catch { self.error = error.localizedDescription }
     }
 }
